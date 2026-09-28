@@ -36,3 +36,7 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Токены Oura (содержат одноразовый refresh token)
+.oura-tokens.json
+.oura-tokens.json.tmp

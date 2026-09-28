@@ -1,0 +1,144 @@
+// Типы описывают только те поля ответов Oura API v2, которые использует приложение.
+
+export interface Paged<T> {
+  data: T[]
+  next_token?: string | null
+}
+
+export interface DailyReadiness {
+  id: string
+  day: string
+  score: number | null
+  temperature_deviation: number | null
+  temperature_trend_deviation: number | null
+  contributors: {
+    activity_balance: number | null
+    body_temperature: number | null
+    hrv_balance: number | null
+    previous_day_activity: number | null
+    previous_night: number | null
+    recovery_index: number | null
+    resting_heart_rate: number | null
+    sleep_balance: number | null
+    sleep_regularity?: number | null
+  }
+}
+
+export interface DailySleep {
+  id: string
+  day: string
+  score: number | null
+  contributors: {
+    deep_sleep: number | null
+    efficiency: number | null
+    latency: number | null
+    rem_sleep: number | null
+    restfulness: number | null
+    timing: number | null
+    total_sleep: number | null
+  }
+}
+
+export interface SleepSession {
+  id: string
+  day: string
+  /** long_sleep | sleep | late_nap | rest | deleted */
+  type: string
+  bedtime_start: string
+  bedtime_end: string
+  average_breath: number | null
+  average_heart_rate: number | null
+  average_hrv: number | null
+  lowest_heart_rate: number | null
+  awake_time: number | null
+  deep_sleep_duration: number | null
+  light_sleep_duration: number | null
+  rem_sleep_duration: number | null
+  total_sleep_duration: number | null
+  time_in_bed: number | null
+  efficiency: number | null
+  latency: number | null
+  restless_periods: number | null
+  /** Гипнограмма по 5 минут: 1 — глубокий, 2 — лёгкий, 3 — REM, 4 — бодрствование. */
+  sleep_phase_5_min?: string | null
+  heart_rate?: SampleSeries | null
+  hrv?: SampleSeries | null
+}
+
+export interface SampleSeries {
+  interval: number
+  items: (number | null)[]
+  timestamp: string
+}
+
+export interface DailyActivity {
+  id: string
+  day: string
+  score: number | null
+  steps: number | null
+  active_calories: number | null
+  total_calories: number | null
+  high_activity_time: number | null
+  medium_activity_time: number | null
+  low_activity_time: number | null
+  sedentary_time: number | null
+  resting_time: number | null
+  equivalent_walking_distance: number | null
+}
+
+export interface DailyStress {
+  id: string
+  day: string
+  stress_high: number | null
+  recovery_high: number | null
+  day_summary: string | null
+}
+
+export interface DailyResilience {
+  id: string
+  day: string
+  level: string | null
+  contributors: {
+    sleep_recovery: number | null
+    daytime_recovery: number | null
+    stress: number | null
+  }
+}
+
+export interface DailySpo2 {
+  id: string
+  day: string
+  spo2_percentage: { average: number | null } | null
+  breathing_disturbance_index: number | null
+}
+
+export interface CardiovascularAge {
+  id: string
+  day: string
+  vascular_age: number | null
+}
+
+export interface Vo2Max {
+  id: string
+  day: string
+  vo2_max: number | null
+}
+
+export interface Workout {
+  id: string
+  day: string
+  activity: string
+  calories: number | null
+  distance: number | null
+  intensity: string | null
+  label: string | null
+  start_datetime: string
+  end_datetime: string
+}
+
+export interface HeartRatePoint {
+  bpm: number
+  /** awake | rest | sleep | workout | session | live */
+  source: string
+  timestamp: string
+}
