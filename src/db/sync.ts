@@ -1,5 +1,5 @@
-import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
-import { fetchAll } from '@/api/client'
+import { addDays, format, formatISO, parseISO, startOfDay } from 'date-fns'
+import { ApiError, fetchAll } from '@/api/client'
 import type { HeartRatePoint } from '@/api/types'
 import { db } from './schema'
 
@@ -74,7 +74,7 @@ async function findHistoryStart(): Promise<string> {
   for (let year = FIRST_POSSIBLE_YEAR; year <= currentYear; year++) {
     const rows = await fetchAll<Row>('daily_sleep', {
       start_date: `${year}-01-01`,
-      end_date: `${year}-12-31`,
+      end_date: `${year + 1}-01-01`,
     })
     if (rows.length > 0) {
       const first = rows.map((r) => r.day).sort()[0]!
@@ -99,39 +99,63 @@ function chunks(from: string, to: string): [string, string][] {
   return result
 }
 
+export interface EndpointFailure {
+  label: string
+  status: number | null
+  message: string
+}
+
 /**
  * Полная или инкрементальная синхронизация всех эндпоинтов в IndexedDB.
- * `full: true` игнорирует накопленное состояние и качает историю заново.
+ * Ошибка одного эндпоинта (например, нет нужного скоупа) не останавливает остальные —
+ * она возвращается в списке. `full: true` игнорирует накопленное состояние.
  */
 export async function syncAll(
   onProgress: (p: SyncProgress) => void,
   options: { full?: boolean } = {},
-): Promise<void> {
+): Promise<EndpointFailure[]> {
   if (options.full) await resetDb()
   const historyStart = await findHistoryStart()
   const end = today()
+  const failures: EndpointFailure[] = []
 
   for (const ep of ENDPOINTS) {
-    const lastKey = `synced:${ep.path}`
-    const last = await getMeta(lastKey)
-    const from = last
-      ? format(addDays(parseISO(last), -RESYNC_TAIL_DAYS), DAY_FORMAT)
-      : historyStart
-    const windows = chunks(from < historyStart ? historyStart : from, end)
-    for (const [i, [start, stop]] of windows.entries()) {
-      onProgress({ label: ep.label, done: i, total: windows.length })
-      // Для end_date Oura считает границу исключительной у части эндпоинтов — берём +1 день.
-      const rows = await fetchAll<Row>(ep.path, {
-        start_date: start,
-        end_date: format(addDays(parseISO(stop), 1), DAY_FORMAT),
-      })
-      await saveRows(ep.table, rows)
+    try {
+      await syncEndpoint(ep, historyStart, end, onProgress)
+    } catch (e) {
+      // Сетевые сбои и 429 после всех повторов прерывают синхронизацию целиком.
+      if (!(e instanceof ApiError) || e.status === 429 || e.status >= 500) throw e
+      failures.push({ label: ep.label, status: e.status, message: e.message })
     }
-    await setMeta(lastKey, end)
-    onProgress({ label: ep.label, done: windows.length, total: windows.length })
   }
 
   await setMeta('lastSyncAt', new Date().toISOString())
+  return failures
+}
+
+async function syncEndpoint(
+  ep: EndpointConfig,
+  historyStart: string,
+  end: string,
+  onProgress: (p: SyncProgress) => void,
+) {
+  const lastKey = `synced:${ep.path}`
+  const last = await getMeta(lastKey)
+  const from = last ? format(addDays(parseISO(last), -RESYNC_TAIL_DAYS), DAY_FORMAT) : historyStart
+  const windows = chunks(from < historyStart ? historyStart : from, end)
+  for (const [i, [start, stop]] of windows.entries()) {
+    onProgress({ label: ep.label, done: i, total: windows.length })
+    // Oura трактует end_date как исключительную границу, а /sleep фильтрует по UTC-времени
+    // начала сна, а не по `day` (ночь дня D начинается вечером D-1). Поэтому окно расширяем
+    // с обеих сторон; дубли безопасны — записи upsert-ятся по id.
+    const rows = await fetchAll<Row>(ep.path, {
+      start_date: format(addDays(parseISO(start), -1), DAY_FORMAT),
+      end_date: format(addDays(parseISO(stop), 2), DAY_FORMAT),
+    })
+    await saveRows(ep.table, rows)
+  }
+  await setMeta(lastKey, end)
+  onProgress({ label: ep.label, done: windows.length, total: windows.length })
 }
 
 export async function resetDb() {
@@ -142,14 +166,12 @@ export async function resetDb() {
 export async function loadHeartDay(day: string, force = false): Promise<HeartRatePoint[]> {
   const cached = await db.heartDays.get(day)
   if (cached && !force && day !== today()) return cached.points
-  const start = parseISO(day)
+  // Границы суток передаём с локальным смещением часового пояса (2021-11-01T00:00:00+03:00).
+  const start = startOfDay(parseISO(day))
   const points = await fetchAll<HeartRatePoint>('heartrate', {
-    start_datetime: `${format(start, DAY_FORMAT)}T00:00:00`,
-    end_datetime: `${format(addDays(start, 1), DAY_FORMAT)}T00:00:00`,
+    start_datetime: formatISO(start),
+    end_datetime: formatISO(addDays(start, 1)),
   })
   await db.heartDays.put({ day, points, fetchedAt: Date.now() })
   return points
 }
-
-export const daysBetween = (a: string, b: string) =>
-  differenceInCalendarDays(parseISO(b), parseISO(a))

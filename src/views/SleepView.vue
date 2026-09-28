@@ -9,7 +9,7 @@ import MetricTile from '@/components/ui/MetricTile.vue'
 import PeriodSelect from '@/components/ui/PeriodSelect.vue'
 import { baselineFor, metricValue, useDailyData } from '@/composables/useDailyData'
 import { useTrend } from '@/composables/useTrend'
-import { formatClock, formatDuration, SECTION_COLOR } from '@/metrics/registry'
+import { clockOf as clock, formatClock, formatDuration, SECTION_COLOR } from '@/metrics/registry'
 import { useDayStore } from '@/stores/period'
 
 const store = useDayStore()
@@ -17,7 +17,6 @@ const { table, loading } = useDailyData()
 const trend = useTrend(table, toRef(store, 'range'))
 
 const sleep = computed(() => table.value.byDay.get(store.day)?.sleep)
-const clock = (iso?: string) => (iso ? format(parseISO(iso), 'HH:mm') : '—')
 
 const TILES = ['sleep_hours', 'efficiency', 'latency_min', 'deep_min', 'rem_min', 'breathing']
 const tiles = computed(() =>

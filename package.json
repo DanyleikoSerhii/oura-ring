@@ -10,10 +10,11 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "oxlint . --fix",
-    "format": "oxfmt src/",
+    "format": "oxfmt src/ tools/ scripts/",
     "lint:check": "oxlint .",
-    "format:check": "oxfmt --check src/",
-    "test": "run-s lint:check format:check"
+    "format:check": "oxfmt --check src/ tools/ scripts/",
+    "test": "run-s lint:check format:check",
+    "oura:auth": "node scripts/oura-auth.ts"
   },
   "dependencies": {
     "date-fns": "^4.4.0",

@@ -10,7 +10,7 @@ import { ENDPOINTS } from '@/db/sync'
 import { useSyncStore } from '@/stores/sync'
 
 const sync = useSyncStore()
-const hasToken = __HAS_TOKEN__
+const hasToken = computed(() => sync.auth?.authorized === true)
 const confirmReset = ref(false)
 
 const { data: counts } = useLive(
@@ -27,7 +27,10 @@ const { data: historyStart } = useLive(
   undefined,
 )
 
-onMounted(() => sync.refreshLastSync())
+onMounted(() => {
+  sync.refreshLastSync()
+  sync.checkAuth()
+})
 
 const last = computed(() =>
   sync.lastSyncAt
@@ -49,11 +52,32 @@ async function reset() {
   <div class="flex max-w-3xl flex-col gap-5">
     <h1 class="text-xl font-semibold">Синхронизация</h1>
 
-    <div v-if="!hasToken" class="rounded-2xl border border-bad/40 bg-bad/10 p-5 text-sm">
-      <p class="font-medium">Токен Oura не найден</p>
-      <p class="mt-1 text-muted">
-        Скопируйте <code>.env.example</code> в <code>.env.local</code>, впишите
-        <code>OURA_TOKEN</code> и перезапустите <code>pnpm dev</code>.
+    <div
+      v-if="sync.auth && !hasToken"
+      class="rounded-2xl border border-bad/40 bg-bad/10 p-5 text-sm"
+    >
+      <p class="font-medium">Вход в Oura не выполнен</p>
+      <ol class="mt-2 list-decimal space-y-1 pl-5 text-muted">
+        <li>
+          Создайте приложение на
+          <a
+            class="underline"
+            href="https://cloud.ouraring.com/oauth/applications"
+            target="_blank"
+            rel="noreferrer"
+            >cloud.ouraring.com/oauth/applications</a
+          >
+          с Redirect URI <code>http://localhost:9876/callback</code>.
+        </li>
+        <li>
+          Впишите <code>OURA_CLIENT_ID</code> и <code>OURA_CLIENT_SECRET</code> в
+          <code>.env.local</code> (см. <code>.env.example</code>).
+        </li>
+        <li>Выполните <code>pnpm oura:auth</code> и подтвердите доступ в браузере.</li>
+        <li>Вернитесь сюда и нажмите «Обновить».</li>
+      </ol>
+      <p v-if="!sync.auth.hasClient" class="mt-2 text-bad">
+        Client ID / Secret пока не найдены в .env.local.
       </p>
     </div>
 
@@ -64,9 +88,28 @@ async function reset() {
       <p class="mt-1 break-words text-muted">
         {{
           sync.unauthorized
-            ? 'Обновите OURA_TOKEN в .env.local и перезапустите dev-сервер.'
+            ? 'Токен недействителен или не обновился. Выполните pnpm oura:auth ещё раз.'
             : sync.error
         }}
+      </p>
+    </div>
+
+    <div
+      v-if="sync.failures.length && !sync.unauthorized"
+      class="rounded-2xl border border-ok/40 bg-ok/10 p-5 text-sm"
+    >
+      <p class="font-medium">Часть данных не загружена</p>
+      <ul class="mt-2 space-y-1 text-muted">
+        <li v-for="f in sync.failures" :key="f.label">
+          {{ f.label }} — {{ f.status
+          }}<template v-if="f.status === 401 || f.status === 403"
+            >: скорее всего, не хватает доступа (скоупа)</template
+          >
+        </li>
+      </ul>
+      <p class="mt-2 text-muted">
+        Остальные данные загружены. Если нужен пропущенный раздел, задайте
+        <code>OURA_SCOPES</code> в <code>.env.local</code> и повторите <code>pnpm oura:auth</code>.
       </p>
     </div>
 

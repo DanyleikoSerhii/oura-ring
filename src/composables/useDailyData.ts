@@ -12,7 +12,9 @@ export interface DailyTable {
 
 const EMPTY: DailyTable = { days: [], byDay: new Map() }
 
-function mainSleep(sessions: SleepSession[]): SleepSession | undefined {
+function mainSleep(all: SleepSession[]): SleepSession | undefined {
+  // Удалённые пользователем и отклонённые (ложные) сессии не учитываем.
+  const sessions = all.filter((s) => s.type !== 'deleted' && s.type !== 'rest')
   const long = sessions.filter((s) => s.type === 'long_sleep')
   const pool = long.length ? long : sessions
   return pool.reduce<SleepSession | undefined>(

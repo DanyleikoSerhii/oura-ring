@@ -9,7 +9,8 @@ const STALE_MS = 60 * 60 * 1000
 
 onMounted(async () => {
   await sync.refreshLastSync()
-  if (!__HAS_TOKEN__) return
+  const auth = await sync.checkAuth()
+  if (!auth?.authorized) return
   const last = sync.lastSyncAt ? Date.parse(sync.lastSyncAt) : 0
   if (Date.now() - last > STALE_MS) void sync.run()
 })

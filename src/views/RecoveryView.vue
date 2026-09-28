@@ -9,7 +9,7 @@ import PeriodSelect from '@/components/ui/PeriodSelect.vue'
 import ScoreRing from '@/components/ui/ScoreRing.vue'
 import { baselineFor, metricValue, useDailyData } from '@/composables/useDailyData'
 import { useTrend } from '@/composables/useTrend'
-import { SECTION_COLOR } from '@/metrics/registry'
+import { READINESS_CONTRIBUTORS, SECTION_COLOR } from '@/metrics/registry'
 import { useDayStore } from '@/stores/period'
 
 const store = useDayStore()
@@ -27,19 +27,9 @@ const tiles = computed(() =>
   })),
 )
 
-const CONTRIBUTORS: [string, string][] = [
-  ['hrv_balance', 'Баланс HRV'],
-  ['resting_heart_rate', 'Пульс в покое'],
-  ['recovery_index', 'Индекс восстановления'],
-  ['previous_night', 'Прошлая ночь'],
-  ['sleep_balance', 'Баланс сна'],
-  ['previous_day_activity', 'Активность вчера'],
-  ['activity_balance', 'Баланс активности'],
-  ['body_temperature', 'Температура тела'],
-]
 const contributors = computed(() => {
   const c = bundle.value?.readiness?.contributors as Record<string, number | null> | undefined
-  return CONTRIBUTORS.map(([key, label]) => ({ label, value: c?.[key] }))
+  return READINESS_CONTRIBUTORS.map(([key, label]) => ({ label, value: c?.[key] }))
 })
 
 const RESILIENCE: Record<string, string> = {

@@ -20,7 +20,14 @@ import {
   useDailyData,
 } from '@/composables/useDailyData'
 import { loadHeartDay } from '@/db/sync'
-import { formatDuration, formatMetric, METRIC_BY_ID, SECTION_COLOR } from '@/metrics/registry'
+import {
+  clockOf as clock,
+  formatDuration,
+  formatMetric,
+  METRIC_BY_ID,
+  READINESS_CONTRIBUTORS,
+  SECTION_COLOR,
+} from '@/metrics/registry'
 import { useDayStore } from '@/stores/period'
 import { useSyncStore } from '@/stores/sync'
 
@@ -68,7 +75,6 @@ const phaseRows = computed(() => {
     { label: 'Бодрствование', sec: s.awake_time, color: '#ff6b81' },
   ].map((r) => ({ ...r, pct: ((r.sec ?? 0) / total) * 100 }))
 })
-const clock = (iso?: string) => (iso ? format(parseISO(iso), 'HH:mm') : '—')
 
 // Пульс за сутки (по запросу)
 const heart = ref<HeartRatePoint[]>([])
@@ -94,19 +100,9 @@ watch(
 )
 
 // Вклады в готовность
-const CONTRIBUTORS: [string, string][] = [
-  ['hrv_balance', 'Баланс HRV'],
-  ['resting_heart_rate', 'Пульс в покое'],
-  ['recovery_index', 'Индекс восстановления'],
-  ['previous_night', 'Прошлая ночь'],
-  ['sleep_balance', 'Баланс сна'],
-  ['previous_day_activity', 'Активность вчера'],
-  ['activity_balance', 'Баланс активности'],
-  ['body_temperature', 'Температура тела'],
-]
 const contributors = computed(() => {
   const c = bundle.value?.readiness?.contributors as Record<string, number | null> | undefined
-  return CONTRIBUTORS.map(([key, label]) => ({ label, value: c?.[key] }))
+  return READINESS_CONTRIBUTORS.map(([key, label]) => ({ label, value: c?.[key] }))
 })
 
 // Активность
@@ -155,8 +151,8 @@ const single = (id: string) => [
     >
       <p class="text-lg font-medium">Данных пока нет</p>
       <p class="max-w-md text-sm text-muted">
-        Запустите синхронизацию, чтобы загрузить историю из Oura. Токен должен лежать в
-        <code>.env.local</code> (см. <code>.env.example</code>).
+        Выполните вход в Oura (<code>pnpm oura:auth</code>) и запустите синхронизацию, чтобы
+        загрузить историю.
       </p>
       <RouterLink to="/sync" class="rounded-lg bg-sleep px-4 py-2 text-sm font-medium text-bg">
         Открыть синхронизацию

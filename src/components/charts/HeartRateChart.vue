@@ -12,6 +12,7 @@ const SOURCES: Record<string, { name: string; color: string }> = {
   awake: { name: 'Бодрствование', color: '#ff6b81' },
   workout: { name: 'Тренировка', color: '#ff9f5a' },
   sleep: { name: 'Сон', color: '#7c83fd' },
+  session: { name: 'Сессия', color: '#f5c451' },
   live: { name: 'Live', color: '#ff6b81' },
 }
 

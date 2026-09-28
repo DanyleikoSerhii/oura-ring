@@ -166,7 +166,7 @@ export const METRICS: MetricDef[] = [
     section: 'sleep',
     digits: 1,
     better: null,
-    get: (d) => d.sleep?.average_breathing,
+    get: (d) => d.sleep?.average_breath,
   },
 
   {
@@ -355,3 +355,21 @@ export function formatDuration(seconds: number | null | undefined): string {
 }
 
 export const dayToDate = (day: string) => parseISO(day)
+
+/** Часы:минуты из ISO-строки Oura как есть (в часовом поясе кольца, без пересчёта в локальный). */
+export function clockOf(iso: string | undefined | null): string {
+  const m = iso ? /T(\d{2}:\d{2})/.exec(iso) : null
+  return m ? m[1]! : '—'
+}
+
+export const READINESS_CONTRIBUTORS: [string, string][] = [
+  ['hrv_balance', 'Баланс HRV'],
+  ['resting_heart_rate', 'Пульс в покое'],
+  ['recovery_index', 'Индекс восстановления'],
+  ['previous_night', 'Прошлая ночь'],
+  ['sleep_balance', 'Баланс сна'],
+  ['sleep_regularity', 'Регулярность сна'],
+  ['previous_day_activity', 'Активность вчера'],
+  ['activity_balance', 'Баланс активности'],
+  ['body_temperature', 'Температура тела'],
+]

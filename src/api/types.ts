@@ -42,10 +42,11 @@ export interface DailySleep {
 export interface SleepSession {
   id: string
   day: string
+  /** long_sleep | sleep | late_nap | rest | deleted */
   type: string
   bedtime_start: string
   bedtime_end: string
-  average_breathing: number | null
+  average_breath: number | null
   average_heart_rate: number | null
   average_hrv: number | null
   lowest_heart_rate: number | null
@@ -137,6 +138,7 @@ export interface Workout {
 
 export interface HeartRatePoint {
   bpm: number
+  /** awake | rest | sleep | workout | session | live */
   source: string
   timestamp: string
 }
